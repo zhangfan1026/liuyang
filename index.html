@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>生日快乐 🎂</title>
+  <style>
+    :root {
+      --bg1: #ffecd2;
+      --bg2: #fcb69f;
+      --pink: #ff4081;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(120deg, var(--bg1), var(--bg2));
+      overflow-x: hidden;
+      text-align: center;
+    }
+
+    /* ===== Intro Dialog ===== */
+    #overlay {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55); z-index: 9999;
+      animation: fadeIn .35s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    .dialog {
+      width: min(92vw, 420px);
+      background: #fff; border-radius: 16px; padding: 26px 22px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.25);
+      transform: scale(.96); animation: pop .35s ease forwards;
+    }
+    @keyframes pop { to { transform: scale(1) } }
+    .dialog h2 { margin: 0 0 12px; color: var(--pink); font-size: 24px; }
+    .dialog p { margin: 0 0 18px; color: #666; font-size: 14px; }
+    .btnrow { display: flex; gap: 12px; justify-content: center; }
+
+    .btn {
+      appearance: none; border: 0; cursor: pointer;
+      padding: 12px 20px; border-radius: 999px; font-size: 16px;
+      transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
+      box-shadow: 0 6px 14px rgba(0,0,0,.15);
+      will-change: transform;
+    }
+    .yes { background: var(--pink); color: #fff; }
+    .no  { background: #87ceeb; color: #fff; }
+
+    /* 固定的三种尺寸，防止累计缩放 */
+    .scale-100 { transform: scale(1); }
+    .scale-big  { transform: scale(1.35); }
+    .scale-small{ transform: scale(0.82); }
+
+    /* ===== Main Content ===== */
+    main { opacity: 0; pointer-events: none; transition: opacity .35s ease; min-height: 100vh; }
+    main.active { opacity: 1; pointer-events: auto; }
+
+    h1 {
+      margin: 40px 0 8px;
+      font-size: clamp(36px, 6vw, 56px);
+      color: var(--pink);
+      text-shadow: 2px 2px 10px rgba(0,0,0,.18);
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-12px) } }
+
+    #message { font-size: 22px; color: #333; min-height: 32px; margin-bottom: 12px; }
+
+    /* Cake */
+    #cake { width: 170px; height: 150px; background: #ffb6c1; border-radius: 12px; margin: 18px auto 0; position: relative;
+      box-shadow: 0 12px 24px rgba(0,0,0,.18); animation: pulse 1.8s infinite; display: none; }
+    @keyframes pulse { 0%,100%{ transform: scale(1) } 50%{ transform: scale(1.05) } }
+    #cake::before{ content:""; position:absolute; top:-42px; left:50%; transform:translateX(-50%); width:22px; height:42px; background:#fff8dc; border-radius:6px; }
+    #cake::after{ content:""; position:absolute; top:-56px; left:50%; transform:translateX(-50%); width:12px; height:22px; background:orange; border-radius:50%; box-shadow:0 0 14px 4px rgba(255,221,0,.9); animation:flicker .28s infinite; }
+    @keyframes flicker { 0%,100%{ opacity:1 } 50%{ opacity:.5 } }
+
+    /* Controls */
+    .controls { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:22px 12px 36px; }
+    .controls button { padding: 12px 20px; border:none; border-radius: 999px; background: var(--pink); color:#fff; font-size:16px; cursor:pointer; box-shadow:0 6px 14px rgba(0,0,0,.15); transition: transform .2s ease; }
+    .controls button:hover { transform: translateY(-2px); }
+
+    /* Balloons */
+    .balloon { position: fixed; bottom: -140px; width: 54px; height: 72px; border-radius: 50%;
+      animation: floatUp linear infinite; }
+    @keyframes floatUp { from { transform: translateY(0) } to { transform: translateY(-115vh) } }
+
+    /* Confetti */
+    .confetti { position: fixed; top:-16px; width: 10px; height: 10px; background: red; animation: fall linear forwards; }
+    @keyframes fall { from { transform: translateY(-8vh) rotate(0) } to { transform: translateY(110vh) rotate(360deg) } }
+
+    /* Fireworks canvas */
+    canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+    /* ===== Blessing Modal ===== */
+    #blessing-modal {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.6); z-index: 10000; display: none;
+    }
+    .blessing-content {
+      width: min(90vw, 500px); background: #fff; padding: 30px; border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.3); text-align: left;
+      animation: popIn .35s ease;
+    }
+    @keyframes popIn { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .blessing-text {
+      font-size: 24px; line-height: 1.6; color: #333; min-height: 100px; white-space: pre-wrap;
+    }
+    .cursor {
+      display: inline-block; width: 2px; height: 1.2em; background-color: var(--pink);
+      margin-left: 2px; animation: blink .7s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .close-btn {
+      position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 28px;
+      color: #999; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <div class="dialog">
+      <h2>今天是你的生日吗？🎂</h2>
+      <p>准备好领取一大波惊喜了吗～</p>
+      <div class="btnrow">
+        <button id="yesBtn" class="btn yes scale-100">当然是！</button>
+        <button id="noBtn"  class="btn no  scale-100">再等等</button>
+      </div>
+      <p id="tease" style="margin-top:10px;color:#777;min-height:1.2em"></p>
+    </div>
+  </div>
+
+  <div id="blessing-modal">
+    <div class="blessing-content">
+      <button class="close-btn" onclick="closeBlessingModal()">&times;</button>
+      <p class="blessing-text" id="typed-blessing"></p>
+    </div>
+  </div>
+
+  <main id="main">
+    <h1>🎉 生日快乐！ 🎂</h1>
+    <div id="message"></div>
+    <div id="cake"></div>
+
+    <div class="controls">
+      <button onclick="playMusic()">▶ 播放音乐</button>
+      <button onclick="showBlessingModal()">🎁 领取祝福</button>
+      <button onclick="showCake()">🎂 看蛋糕</button>
+      <button onclick="releaseBalloons()">🎈 放气球</button>
+      <button onclick="throwConfetti()">🎉 撒彩纸</button>
+    </div>
+  </main>
+
+  <canvas id="fw"></canvas>
+  <audio id="music" src="music.mp3" preload="auto" loop></audio>
+
+  <script>
+    // ===== Config =====
+    const BLESSING_TEXT = "亲爱的朋友，生日快乐！\n\n愿你万事胜意、被爱环绕～ 🎂🎉\n\n生活可以五颜六色，愿你继续热爱这个世界，活出自己的光芒";
+
+    // ===== Elements =====
+    const overlay = document.getElementById('overlay');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn  = document.getElementById('noBtn');
+    const tease  = document.getElementById('tease');
+    const mainEl = document.getElementById('main');
+    const messageEl = document.getElementById('message');
+    const cakeEl = document.getElementById('cake');
+    const music = document.getElementById('music');
+    const blessingModal = document.getElementById('blessing-modal');
+    const typedBlessingEl = document.getElementById('typed-blessing');
+
+    // ===== Dialog interactions =====
+    // state flips on each "再等等" click to alternate which one is big/small
+    let flipped = false;
+
+    function setSizes(yesSize, noSize){
+      // remove previous size classes
+      [yesBtn, noBtn].forEach(btn => btn.classList.remove('scale-100','scale-big','scale-small'));
+      yesBtn.classList.add(yesSize);
+      noBtn.classList.add(noSize);
+    }
+
+    noBtn.addEventListener('click', () => {
+      flipped = !flipped;
+      // alternate big/small between the two buttons — NO cumulative scaling
+      if (!flipped) {
+        setSizes('scale-big','scale-small');
+        tease.textContent = '嘿，再犹豫一会儿也行，不过惊喜在等你哦～';
+      } else {
+        setSizes('scale-small','scale-big');
+        tease.textContent = '再等等？那我就把惊喜再放大一点点~';
+      }
+    });
+
+    yesBtn.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      mainEl.classList.add('active');
+      playMusic();
+      // small entrance burst
+      throwConfetti(60);
+      releaseBalloons(12);
+    });
+
+    // ===== Music function =====
+    function playMusic(){
+      music.play().then(() => {
+        // 成功播放
+        console.log("音乐已开始播放");
+      }).catch(error => {
+        // 播放失败，通常是因为浏览器阻止了自动播放
+        console.error("音乐播放失败:", error);
+        alert("音乐播放失败。请点击页面上的任意位置来尝试播放音乐。");
+      });
+    }
+
+    // ===== Blessing Modal Logic =====
+    function showBlessingModal() {
+      blessingModal.style.display = 'flex';
+      typeWriter(BLESSING_TEXT, typedBlessingEl);
+    }
+
+    function closeBlessingModal() {
+      blessingModal.style.display = 'none';
+      typedBlessingEl.innerHTML = ''; // 清空内容以便下次重新打字
+    }
+
+    function typeWriter(text, element) {
+      let i = 0;
+      element.textContent = ''; // 清空内容
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      element.appendChild(cursor);
+
+      const speed = 100; // 打字速度，毫秒
+
+      function type() {
+        if (i < text.length) {
+          if (text.charAt(i) === '\n') {
+            element.insertBefore(document.createElement('br'), cursor);
+          } else {
+            const charSpan = document.createElement('span');
+            charSpan.textContent = text.charAt(i);
+            element.insertBefore(charSpan, cursor);
+          }
+          i++;
+          setTimeout(type, speed);
+        } else {
+          // 打字结束后移除光标
+          cursor.remove();
+        }
+      }
+      type();
+    }
+
+    // ===== Other Controls logic =====
+    function showCake(){ cakeEl.style.display = 'block'; }
+
+    function releaseBalloons(count = 10){
+      for (let i=0;i<count;i++){
+        const b = document.createElement('div');
+        b.className = 'balloon';
+        b.style.left = Math.random()*100 + 'vw';
+        b.style.background = `hsl(${Math.random()*360},70%,65%)`;
+        b.style.animationDuration = (4+Math.random()*6)+'s';
+        b.style.zIndex = 1;
+        document.body.appendChild(b);
+        setTimeout(()=>b.remove(), 12000);
+      }
+    }
+
+    function throwConfetti(count = 36){
+      for (let i=0;i<count;i++){
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random()*100 + 'vw';
+        c.style.background = `hsl(${Math.random()*360},85%,60%)`;
+        c.style.width = c.style.height = (6+Math.random()*10)+'px';
+        c.style.animationDuration = (2+Math.random()*3)+'s';
+        c.style.zIndex = 2;
+        document.body.appendChild(c);
+        setTimeout(()=>c.remove(), 6000);
+      }
+    }
+
+    // ===== Fireworks on click (after entering) =====
+    const fw = document.getElementById('fw');
+    const ctx = fw.getContext('2d');
+    function resize(){ fw.width = innerWidth; fw.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
+
+    function firework(x, y){
+      for (let i=0;i<50;i++){
+        let px=x, py=y;
+        const ang = Math.random()*Math.PI*2;
+        const spd = 1 + Math.random()*4.5;
+        const vx = Math.cos(ang)*spd;
+        const vy = Math.sin(ang)*spd;
+        const color = `hsl(${Math.random()*360},100%,60%)`;
+        let life = 60;
+        (function draw(){
+          if (life-- > 0){
+            ctx.fillStyle = color;
+            ctx.fillRect(px, py, 2, 2);
+            px += vx; py += vy; 
+            // gravity
+            py += 0.04;
+            requestAnimationFrame(draw);
+          }
+        })();
+      }
+    }
+
+    addEventListener('click', (e) => {
+      if (overlay.style.display === 'none'){
+        firework(e.clientX, e.clientY);
+      }
+    });
+  </script>
+</body>
+
+</html>
+
+
+
+
